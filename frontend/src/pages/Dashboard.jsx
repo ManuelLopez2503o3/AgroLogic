@@ -9,6 +9,7 @@ import {
 
 import api from "../services/api";
 import GraficaHistorica from "../components/GraficaHistorica";
+import Chatbot from "../components/Chatbot";
 
 import "./Dashboard.css";
 
@@ -482,6 +483,7 @@ export default function Dashboard() {
       "lecturas",
       "graficas",
       "alertas",
+      "asistente",
       "control-actuadores",
       "usuarios",
       "configuracion-umbrales",
@@ -703,6 +705,31 @@ export default function Dashboard() {
 
             <span>
               Alertas
+            </span>
+
+          </button>
+
+
+          {/* ASISTENTE IA */}
+
+          <button
+            className={
+              seccionActiva === "asistente"
+                ? "sidebar-item active"
+                : "sidebar-item"
+            }
+            type="button"
+            onClick={() =>
+              irASeccion("asistente")
+            }
+          >
+
+            <span className="sidebar-icon">
+              💬
+            </span>
+
+            <span>
+              Asistente IA
             </span>
 
           </button>
@@ -1322,6 +1349,37 @@ export default function Dashboard() {
 
                   </div>
                 )}
+
+              </section>
+
+
+              {/* =================================
+                  ASISTENTE IA (CHATBOT)
+              ================================== */}
+
+              <section
+                id="asistente"
+                className="dashboard-section"
+              >
+
+                <div className="dashboard-section-heading">
+
+                  <span>
+                    Inteligencia Artificial
+                  </span>
+
+                  <h2>
+                    Asistente AgroLogic
+                  </h2>
+
+                  <p>
+                    Consulta información sobre las plantas registradas:
+                    humedad ideal, temperatura, nutrientes y más.
+                  </p>
+
+                </div>
+
+                <Chatbot />
 
               </section>
 

@@ -1,0 +1,192 @@
+.chatbot-card {
+    margin-top: 24px;
+    padding: 24px;
+    border: 1px solid rgba(21, 128, 61, 0.14);
+    border-radius: 22px;
+    background: linear-gradient(145deg, #ffffff, #eff9f1);
+    box-shadow: 0 20px 50px rgba(21, 128, 61, 0.07);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .chatbot-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  
+  .chatbot-icon {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 15px;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(101, 163, 13, 0.09));
+    border: 1px solid rgba(21, 128, 61, 0.14);
+    font-size: 22px;
+  }
+  
+  .chatbot-header-text strong {
+    display: block;
+    color: var(--agro-text);
+    font-size: 15px;
+  }
+  
+  .chatbot-header-text span {
+    display: block;
+    margin-top: 2px;
+    color: #6b8375;
+    font-size: 13px;
+  }
+  
+  .chatbot-mensajes {
+    min-height: 220px;
+    max-height: 360px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(21, 128, 61, 0.12);
+  }
+  
+  .chatbot-mensaje {
+    padding: 12px 16px;
+    border-radius: 16px;
+    max-width: 78%;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  
+  .chatbot-mensaje-usuario {
+    align-self: flex-end;
+    background: var(--agro-green-light);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  
+  .chatbot-mensaje-bot {
+    align-self: flex-start;
+    background: var(--agro-panel-2);
+    color: var(--agro-text);
+    border: 1px solid rgba(21, 128, 61, 0.1);
+    border-bottom-left-radius: 4px;
+  }
+  
+  .chatbot-cargando {
+    color: #6b8375;
+    font-style: italic;
+  }
+  
+  .chatbot-vacio {
+    color: #6b8375;
+    text-align: center;
+    font-size: 13px;
+    margin-top: 40px;
+  }
+  
+  /* --- Formato de mensajes del bot (markdown) --- */
+  .chatbot-mensaje-formateado p {
+    margin: 0 0 8px 0;
+  }
+  
+  .chatbot-mensaje-formateado p:last-child {
+    margin-bottom: 0;
+  }
+  
+  .chatbot-mensaje-formateado ul {
+    margin: 4px 0 8px 0;
+    padding-left: 20px;
+  }
+  
+  .chatbot-mensaje-formateado li {
+    margin-bottom: 4px;
+  }
+  
+  .chatbot-mensaje-formateado strong {
+    font-weight: 700;
+    color: var(--agro-text);
+  }
+  
+  /* --- Preguntas sugeridas --- */
+  .chatbot-sugerencias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  
+  .chatbot-chip {
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(21, 128, 61, 0.18);
+    color: var(--agro-text);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+  }
+  
+  .chatbot-chip:hover {
+    background: rgba(34, 197, 94, 0.16);
+    border-color: var(--agro-green);
+    transform: translateY(-1px);
+  }
+  
+  .chatbot-chip:active {
+    transform: translateY(0);
+  }
+  
+  .chatbot-form {
+    display: flex;
+    gap: 12px;
+  }
+  
+  .chatbot-form input {
+    flex: 1;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1.5px solid rgba(21, 128, 61, 0.22);
+    background: white;
+    color: var(--agro-text);
+    font-size: 14px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  
+  .chatbot-form input:focus {
+    outline: none;
+    border-color: var(--agro-green);
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+  }
+  
+  .chatbot-form input:disabled {
+    opacity: 0.6;
+  }
+  
+  .chatbot-form button {
+    padding: 0 24px;
+    border-radius: 14px;
+    border: 1px solid rgba(21, 128, 61, 0.2);
+    background: rgba(34, 197, 94, 0.05);
+    color: var(--agro-text);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+  
+  .chatbot-form button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    background: rgba(34, 197, 94, 0.14);
+    border-color: var(--agro-green);
+  }
+  
+  .chatbot-form button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
