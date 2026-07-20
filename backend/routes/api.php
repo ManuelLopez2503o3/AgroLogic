@@ -10,6 +10,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ActuadorController;
 use App\Http\Controllers\AlertaIncendioController;
 use App\Http\Controllers\BitacoraController;
+use App\Http\Controllers\PlantaController;
+use App\Http\Controllers\ChatbotController;
 
 // pública, la llama serial_bridge.py (maquina a maquina, prioridad alta)
 Route::post('/alertas/incendio', [AlertaIncendioController::class, 'store']);
@@ -75,25 +77,28 @@ Route::get(
 | RUTAS PROTEGIDAS CON JWT
 |--------------------------------------------------------------------------
 */
-
 Route::middleware('auth:api')
     ->group(function () {
 
-        Route::get('/me', [AuthController::class, 'me']);
-        Route::post('/logout', [AuthController::class, 'logout']);
+Route::get('/me', [AuthController::class, 'me']);
+Route::post('/logout', [AuthController::class, 'logout']);
 
-        Route::post('/comandos', [ComandoController::class, 'store']);
+Route::post('/comandos', [ComandoController::class, 'store']);
 
-        Route::get('/incidentes/ultimo', [IncidenteFuegoController::class, 'ultimo']);
+Route::get('/incidentes/ultimo', [IncidenteFuegoController::class, 'ultimo']);
 
-        Route::get('/configuraciones/{clave}', [ConfiguracionController::class, 'show']);
-        Route::post('/configuraciones', [ConfiguracionController::class, 'update']);
+Route::get('/configuraciones/{clave}', [ConfiguracionController::class, 'show']);
+Route::post('/configuraciones', [ConfiguracionController::class, 'update']);
 
-        Route::get('/usuarios', [UserController::class, 'index']);
-        Route::patch('/usuarios/{id}/role', [UserController::class, 'updateRole']);
-        Route::delete('/usuarios/{id}', [UserController::class, 'destroy']);
-        Route::patch('/actuadores', [ActuadorController::class, 'update']);
+Route::get('/usuarios', [UserController::class, 'index']);
+Route::patch('/usuarios/{id}/role', [UserController::class, 'updateRole']);
+Route::delete('/usuarios/{id}', [UserController::class, 'destroy']);
+Route::patch('/actuadores', [ActuadorController::class, 'update']);
 
-        Route::get('/bitacoras/exportar', [BitacoraController::class, 'exportarPdf']);
+Route::get('/bitacoras/exportar', [BitacoraController::class, 'exportarPdf']);
+
+Route::apiResource('plantas', PlantaController::class);
+Route::post('/chatbot/preguntar', [ChatbotController::class, 'preguntar']);
+Route::get('/chatbot/historial', [ChatbotController::class, 'historial']);
 
     });
