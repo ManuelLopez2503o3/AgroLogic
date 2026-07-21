@@ -9,9 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('plantas', function (Blueprint $table) {
-            $table->foreignId('user_id')
-                  ->after('id')
-                  ->constrained('users')
+            $table->bigInteger('user_id')->after('id');
+        });
+
+        Schema::table('plantas', function (Blueprint $table) {
+            $table->foreign('user_id')
+                  ->references('id')
+                  ->on('users')
                   ->onDelete('cascade');
         });
     }
