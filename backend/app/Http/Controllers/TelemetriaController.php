@@ -52,6 +52,26 @@ class TelemetriaController extends Controller
                 (float) $datos['humedad']
             );
 
+            $telemetria = Telemetria::create([
+    'temperatura' => $datos['temperatura'],
+    'humedad' => $datos['humedad'],
+    'estado' => $estado,
+    'fecha_registro' => now(),
+]);
+
+$this->manejarIncidenteFuego(
+    $estado,
+    (float) $datos['temperatura'],
+    (float) $datos['humedad']
+);
+
+// NUEVO: si el modo agente está activo, que evalúe esta lectura
+app(\App\Services\AgenteIAService::class)->evaluar(
+    (float) $datos['temperatura'],
+    (float) $datos['humedad']
+);
+
+
             return response()->json([
                 'message' => 'Telemetría guardada correctamente',
                 'id' => $telemetria->id,

@@ -9,9 +9,11 @@ import {
 
 import api from "../services/api";
 import GraficaHistorica from "../components/GraficaHistorica";
-import Chatbot from "../components/Chatbot";
 
 import "./Dashboard.css";
+import Chatbot from "../components/Chatbot";
+import logo from "../assets/Logo.png";
+
 
 
 export default function Dashboard() {
@@ -277,6 +279,32 @@ export default function Dashboard() {
   const [errorBitacora, setErrorBitacora] =
     useState("");
 
+  const [reportesSalud, setReportesSalud] =
+    useState([]);
+
+  const [cargandoReportesSalud, setCargandoReportesSalud] =
+    useState(false);
+
+  const [fechaReporteSalud, setFechaReporteSalud] =
+    useState(new Date(Date.now() - 86400000).toISOString().slice(0, 10));
+
+  const [generandoReporteSalud, setGenerandoReporteSalud] =
+    useState(false);
+
+  const [mensajeReporteSalud, setMensajeReporteSalud] =
+    useState("");
+
+  const [mesCalendario, setMesCalendario] = useState(() => {
+    const inicial = new Date(fechaReporteSalud + "T00:00:00");
+    return new Date(inicial.getFullYear(), inicial.getMonth(), 1);
+  });
+
+  const [mostrarModalReporte, setMostrarModalReporte] =
+    useState(false);
+
+  const [reporteSeleccionado, setReporteSeleccionado] =
+    useState(null);
+
   const cargarPreviewBitacora = async (fecha) => {
     try {
       setCargandoPreviewBitacora(true);
@@ -339,6 +367,152 @@ export default function Dashboard() {
     document.body.appendChild(enlace);
     enlace.click();
     enlace.remove();
+  };
+
+
+  // =========================================
+  // AI REPORTS (HU-13)
+  // =========================================
+
+  const cargarReportesSalud = async () => {
+    try {
+      setCargandoReportesSalud(true);
+
+      const response = await api.get("/reportes-salud");
+
+      setReportesSalud(response.data);
+
+    } catch (error) {
+      console.error("Error obteniendo reportes de salud:", error);
+
+    } finally {
+      setCargandoReportesSalud(false);
+    }
+  };
+
+  const generarReporteSalud = async () => {
+    try {
+      setGenerandoReporteSalud(true);
+      setMensajeReporteSalud("");
+
+      await api.post("/reportes-salud/generar", {
+        fecha: fechaReporteSalud,
+      });
+
+      setMensajeReporteSalud("Reporte generado correctamente");
+      cargarReportesSalud();
+
+      setTimeout(() => setMensajeReporteSalud(""), 4000);
+
+    } catch (error) {
+      console.error("Error generando reporte de salud:", error);
+      setMensajeReporteSalud(
+        error.response?.data?.message || "No se pudo generar el reporte"
+      );
+      setTimeout(() => setMensajeReporteSalud(""), 4000);
+
+    } finally {
+      setGenerandoReporteSalud(false);
+    }
+  };
+
+
+  const cambiarMesCalendario = (delta) => {
+    setMesCalendario((prev) =>
+      new Date(prev.getFullYear(), prev.getMonth() + delta, 1)
+    );
+  };
+
+  const formatearYMD = (fecha) => {
+    const y = fecha.getFullYear();
+    const m = String(fecha.getMonth() + 1).padStart(2, "0");
+    const d = String(fecha.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const construirCeldasCalendario = (mesBase) => {
+    const anio = mesBase.getFullYear();
+    const mes = mesBase.getMonth();
+
+    const primerDia = new Date(anio, mes, 1);
+    const ultimoDia = new Date(anio, mes + 1, 0);
+
+    const celdas = [];
+
+    for (let i = 0; i < primerDia.getDay(); i++) {
+      celdas.push(null);
+    }
+
+    for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+      celdas.push(new Date(anio, mes, dia));
+    }
+
+    return celdas;
+  };
+
+
+  // =========================================
+  // AGENTE IA (HU-15)
+  // =========================================
+
+  const [estadoAgente, setEstadoAgente] =
+    useState(null);
+
+  const [cargandoAgente, setCargandoAgente] =
+    useState(false);
+
+  const [cambiandoModoAgente, setCambiandoModoAgente] =
+    useState(false);
+
+  const [mensajeAgente, setMensajeAgente] =
+    useState("");
+
+  const cargarEstadoAgente = async () => {
+    try {
+      setCargandoAgente(true);
+
+      const response = await api.get("/ia/estado");
+
+      setEstadoAgente(response.data);
+
+    } catch (error) {
+      console.error("Error obteniendo estado del agente:", error);
+
+    } finally {
+      setCargandoAgente(false);
+    }
+  };
+
+  const cambiarModoAgente = async (activo) => {
+    const confirmar = window.confirm(
+      activo
+        ? "¿Activar el modo agente? El sistema podrá tomar decisiones automáticas sobre la bomba y las luces sin intervención humana."
+        : "¿Desactivar el modo agente? El sistema dejará de tomar decisiones automáticas."
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setCambiandoModoAgente(true);
+
+      await api.post("/ia/modo-autonomo", { activo });
+
+      setMensajeAgente(
+        activo ? "Modo agente activado" : "Modo agente desactivado"
+      );
+
+      cargarEstadoAgente();
+
+      setTimeout(() => setMensajeAgente(""), 3000);
+
+    } catch (error) {
+      console.error("Error cambiando modo agente:", error);
+      setMensajeAgente("No se pudo cambiar el modo agente");
+      setTimeout(() => setMensajeAgente(""), 3000);
+
+    } finally {
+      setCambiandoModoAgente(false);
+    }
   };
 
 
@@ -437,6 +611,8 @@ export default function Dashboard() {
     if (rol === "administrador") {
       cargarUsuarios();
       cargarUmbral();
+      cargarReportesSalud();
+      cargarEstadoAgente();
     }
 
     const intervalo = setInterval(() => {
@@ -444,6 +620,10 @@ export default function Dashboard() {
       cargarUltimoIncidente();
       cargarEstadoActuadores();
       cargarAlertas();
+
+      if (rol === "administrador") {
+        cargarEstadoAgente();
+      }
     }, 5000);
 
     return () => {
@@ -482,12 +662,14 @@ export default function Dashboard() {
       "resumen",
       "lecturas",
       "graficas",
-      "alertas",
       "asistente",
+      "alertas",
       "control-actuadores",
       "usuarios",
       "configuracion-umbrales",
       "reportes-ia",
+      "ai-reports",
+      "agrologic-ai",
     ];
 
     const elementos = ids
@@ -570,9 +752,11 @@ export default function Dashboard() {
 
         <div className="sidebar-brand">
 
-          <div className="sidebar-logo">
-            🌱
-          </div>
+          <img
+                  src={logo}
+                  alt="Logo AgroLogic"
+                  className="logo-img"
+                />
 
           <div className="sidebar-brand-text">
 
@@ -581,7 +765,7 @@ export default function Dashboard() {
             </strong>
 
             <span>
-              Smart Greenhouse
+              Invernadero Inteligente
             </span>
 
           </div>
@@ -685,31 +869,6 @@ export default function Dashboard() {
           </button>
 
 
-          {/* ALERTAS */}
-
-          <button
-            className={
-              seccionActiva === "alertas"
-                ? "sidebar-item active"
-                : "sidebar-item"
-            }
-            type="button"
-            onClick={() =>
-              irASeccion("alertas")
-            }
-          >
-
-            <span className="sidebar-icon">
-              🔔
-            </span>
-
-            <span>
-              Alertas
-            </span>
-
-          </button>
-
-
           {/* ASISTENTE IA */}
 
           <button
@@ -730,6 +889,31 @@ export default function Dashboard() {
 
             <span>
               Asistente IA
+            </span>
+
+          </button>
+
+
+          {/* ALERTAS */}
+
+          <button
+            className={
+              seccionActiva === "alertas"
+                ? "sidebar-item active"
+                : "sidebar-item"
+            }
+            type="button"
+            onClick={() =>
+              irASeccion("alertas")
+            }
+          >
+
+            <span className="sidebar-icon">
+              🔔
+            </span>
+
+            <span>
+              Alertas
             </span>
 
           </button>
@@ -840,6 +1024,52 @@ export default function Dashboard() {
 
 
               <button
+                className={
+                  seccionActiva === "ai-reports"
+                    ? "sidebar-item active"
+                    : "sidebar-item"
+                }
+                type="button"
+                onClick={() =>
+                  irASeccion("ai-reports")
+                }
+              >
+
+                <span className="sidebar-icon">
+                  📊
+                </span>
+
+                <span>
+                  Reporte Diario IA 
+                </span>
+
+              </button>
+
+
+              <button
+                className={
+                  seccionActiva === "agrologic-ai"
+                    ? "sidebar-item active"
+                    : "sidebar-item"
+                }
+                type="button"
+                onClick={() =>
+                  irASeccion("agrologic-ai")
+                }
+              >
+
+                <span className="sidebar-icon">
+                  🧠
+                </span>
+
+                <span>
+                  AgroLogic AI
+                </span>
+
+              </button>
+
+
+              <button
                 className="sidebar-item"
                 type="button"
                 onClick={abrirModalBitacora}
@@ -899,13 +1129,7 @@ export default function Dashboard() {
                 type="button"
               >
 
-                <span className="sidebar-icon">
-                  🌿
-                </span>
-
-                <span>
-                  Estado del cultivo
-                </span>
+              
 
               </button>
 
@@ -1268,6 +1492,37 @@ export default function Dashboard() {
 
 
               {/* =================================
+                  ASISTENTE IA (CHATBOT)
+              ================================== */}
+
+              <section
+                id="asistente"
+                className="dashboard-section"
+              >
+
+                <div className="dashboard-section-heading">
+
+                  <span>
+                    Inteligencia Artificial
+                  </span>
+
+                  <h2>
+                    Asistente AgroLogic
+                  </h2>
+
+                  <p>
+                    Consulta información sobre las plantas registradas:
+                    humedad ideal, temperatura, nutrientes y más.
+                  </p>
+
+                </div>
+
+                <Chatbot />
+
+              </section>
+
+
+              {/* =================================
                   ALERTAS (HU-10)
               ================================== */}
 
@@ -1349,37 +1604,6 @@ export default function Dashboard() {
 
                   </div>
                 )}
-
-              </section>
-
-
-              {/* =================================
-                  ASISTENTE IA (CHATBOT)
-              ================================== */}
-
-              <section
-                id="asistente"
-                className="dashboard-section"
-              >
-
-                <div className="dashboard-section-heading">
-
-                  <span>
-                    Inteligencia Artificial
-                  </span>
-
-                  <h2>
-                    Asistente AgroLogic
-                  </h2>
-
-                  <p>
-                    Consulta información sobre las plantas registradas:
-                    humedad ideal, temperatura, nutrientes y más.
-                  </p>
-
-                </div>
-
-                <Chatbot />
 
               </section>
 
@@ -1780,6 +2004,321 @@ export default function Dashboard() {
                 </section>
               )}
 
+
+              {/* =================================
+                  AI REPORTS (HU-13)
+              ================================== */}
+
+              {rol === "administrador" && (
+                <section
+                  id="ai-reports"
+                  className="dashboard-section"
+                >
+
+                  <div className="dashboard-section-heading">
+
+                    <span>
+                      Inteligencia Artificial
+                    </span>
+
+                    <h2>
+                      Reporte Diario IA
+                    </h2>
+
+                    <p>
+                      Diagnóstico cualitativo diario sobre posibles
+                      riesgos de estrés hídrico, generado con IA a
+                      partir del promedio de las últimas 24 horas.
+                    </p>
+
+                  </div>
+
+
+                  <div className="calendario-salud">
+
+                    <div className="calendario-salud-header">
+
+                      <button
+                        type="button"
+                        className="calendario-nav"
+                        onClick={() => cambiarMesCalendario(-1)}
+                      >
+                        ‹
+                      </button>
+
+                      <strong>
+                        {mesCalendario.toLocaleDateString("es-MX", {
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </strong>
+
+                      <button
+                        type="button"
+                        className="calendario-nav"
+                        onClick={() => cambiarMesCalendario(1)}
+                      >
+                        ›
+                      </button>
+
+                    </div>
+
+
+                    <div className="calendario-salud-dias-semana">
+                      <span>D</span>
+                      <span>L</span>
+                      <span>M</span>
+                      <span>M</span>
+                      <span>J</span>
+                      <span>V</span>
+                      <span>S</span>
+                    </div>
+
+
+                    <div className="calendario-salud-grid">
+
+                      {construirCeldasCalendario(mesCalendario).map((fecha, i) => {
+                        if (!fecha) {
+                          return (
+                            <span
+                              key={`vacio-${i}`}
+                              className="calendario-dia calendario-dia-vacio"
+                            />
+                          );
+                        }
+
+                        const ymd = formatearYMD(fecha);
+
+                        const hoy = new Date();
+                        hoy.setHours(0, 0, 0, 0);
+
+                        const tieneReporte = reportesSalud.some(
+                          (r) => r.fecha === ymd
+                        );
+                        const esFuturo = fecha > hoy;
+                        const esSeleccionado = ymd === fechaReporteSalud;
+
+                        return (
+                          <button
+                            key={ymd}
+                            type="button"
+                            disabled={esFuturo}
+                            className={
+                              "calendario-dia" +
+                              (tieneReporte ? " calendario-dia-con-reporte" : "") +
+                              (esSeleccionado ? " calendario-dia-seleccionado" : "")
+                            }
+                            onClick={() => {
+                              setFechaReporteSalud(ymd);
+
+                              const reporte = reportesSalud.find(
+                                (r) => r.fecha === ymd
+                              );
+
+                              if (reporte) {
+                                setReporteSeleccionado(reporte);
+                                setMostrarModalReporte(true);
+                              }
+                            }}
+                          >
+                            {fecha.getDate()}
+                          </button>
+                        );
+                      })}
+
+                    </div>
+
+
+                    <div className="calendario-salud-footer">
+
+                      <span className="calendario-salud-fecha-elegida">
+                        {new Date(fechaReporteSalud + "T00:00:00")
+                          .toLocaleDateString("es-MX", {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                          })}
+                      </span>
+
+                      <button
+                        type="button"
+                        className="btn-color btn-auto"
+                        disabled={generandoReporteSalud}
+                        onClick={generarReporteSalud}
+                      >
+                        {generandoReporteSalud
+                          ? "Generando..."
+                          : "Generar"}
+                      </button>
+
+                    </div>
+
+
+                    <span className="form-umbral-ayuda">
+                      Los días en verde ya tienen un reporte generado.
+                    </span>
+
+                  </div>
+
+
+                  {mensajeReporteSalud && (
+                    <div className="dashboard-message">
+                      {mensajeReporteSalud}
+                    </div>
+                  )}
+
+
+                  {reportesSalud.length === 0 && !cargandoReportesSalud && (
+                    <p className="dashboard-message">
+                      Todavía no hay reportes de salud generados.
+                    </p>
+                  )}
+
+                  {cargandoReportesSalud && (
+                    <p className="dashboard-message">
+                      Cargando reportes...
+                    </p>
+                  )}
+
+                </section>
+              )}
+
+
+              {/* =================================
+                  AGROLOGIC AI (HU-15)
+              ================================== */}
+
+              {rol === "administrador" && (
+                <section
+                  id="agrologic-ai"
+                  className="dashboard-section"
+                >
+
+                  <div className="dashboard-section-heading">
+
+                    <span>
+                      Inteligencia Artificial
+                    </span>
+
+                    <h2>
+                      AgroLogic AI
+                    </h2>
+
+                    <p>
+                      Agente autónomo que supervisa el invernadero y puede
+                      tomar decisiones automáticas cuando detecta riesgo crítico.
+                    </p>
+
+                  </div>
+
+
+                  {mensajeAgente && (
+                    <div className="dashboard-message">
+                      {mensajeAgente}
+                    </div>
+                  )}
+
+
+                  {cargandoAgente ? (
+                    <p className="dashboard-message">
+                      Cargando estado del agente...
+                    </p>
+                  ) : (
+                    <div className="panel-agente-ia">
+
+                      <div className="panel-agente-ia-switch">
+
+                        <div>
+                          <strong>Modo agente</strong>
+                          <span>
+                            {estadoAgente?.modo_autonomo
+                              ? "Activo — el sistema puede actuar solo"
+                              : "Inactivo — solo observa y recomienda"}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={
+                            estadoAgente?.modo_autonomo
+                              ? "switch-toggle activo"
+                              : "switch-toggle"
+                          }
+                          disabled={cambiandoModoAgente}
+                          onClick={() =>
+                            cambiarModoAgente(!estadoAgente?.modo_autonomo)
+                          }
+                        >
+                          {cambiandoModoAgente ? (
+                            <span className="switch-toggle-spinner" />
+                          ) : (
+                            <span className="switch-toggle-bola" />
+                          )}
+                        </button>
+
+                      </div>
+
+
+                      {estadoAgente?.ultima_decision ? (
+                        <div className="panel-agente-ia-decision">
+
+                          <div className="panel-agente-ia-decision-header">
+
+                            <span
+                              className={
+                                "agente-riesgo-badge agente-riesgo-" +
+                                estadoAgente.ultima_decision.nivel_riesgo
+                              }
+                            >
+                              {estadoAgente.ultima_decision.nivel_riesgo}
+                            </span>
+
+                            <span className="panel-agente-ia-fecha">
+                              {new Date(
+                                estadoAgente.ultima_decision.fecha_hora.replace(" ", "T")
+                              ).toLocaleString("es-MX")}
+                            </span>
+
+                          </div>
+
+                          <div className="panel-agente-ia-datos">
+
+                            <div>
+                              <span>Temperatura</span>
+                              <strong>{estadoAgente.ultima_decision.temperatura}°C</strong>
+                            </div>
+
+                            <div>
+                              <span>Humedad</span>
+                              <strong>{estadoAgente.ultima_decision.humedad}%</strong>
+                            </div>
+
+                          </div>
+
+                          {estadoAgente.ultima_decision.accion_ejecutada && (
+                            <p className="panel-agente-ia-accion">
+                              <strong>Acción ejecutada: </strong>
+                              {estadoAgente.ultima_decision.accion_ejecutada}
+                            </p>
+                          )}
+
+                          <p className="panel-agente-ia-motivo">
+                            {estadoAgente.ultima_decision.motivo}
+                          </p>
+
+                        </div>
+                      ) : (
+                        <p className="dashboard-message">
+                          Todavía no hay decisiones registradas.
+                        </p>
+                      )}
+
+                    </div>
+                  )}
+
+                </section>
+              )}
+
             </>
           )}
 
@@ -1872,9 +2411,87 @@ export default function Dashboard() {
                   src={urlPreviewBitacora}
                   title="Vista previa de la bitácora"
                   className="modal-bitacora-iframe"
-                />
+                />  
               )}
 
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+
+      {/* =====================================
+          MODAL: REPORTE DE SALUD (AI REPORTS)
+      ====================================== */}
+
+      {mostrarModalReporte && reporteSeleccionado && (
+        <div
+          className="modal-overlay"
+          onClick={() => setMostrarModalReporte(false)}
+        >
+
+          <div
+            className="modal-reporte-salud"
+            onClick={(e) => e.stopPropagation()}
+          >
+
+            <div className="modal-reporte-salud-header">
+
+              <div>
+                <span className="modal-reporte-salud-etiqueta">
+                  🤖 Reporte Diario
+                </span>
+                <h3>
+                  {new Date(reporteSeleccionado.fecha + "T00:00:00")
+                    .toLocaleDateString("es-MX", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                    })}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                className="modal-cerrar"
+                onClick={() => setMostrarModalReporte(false)}
+              >
+                ✕
+              </button>
+
+            </div>
+
+
+            <div className="modal-reporte-salud-metricas">
+
+              <div className="modal-reporte-salud-metrica">
+                <span>Temp. promedio</span>
+                <strong>{reporteSeleccionado.temperatura_promedio}°C</strong>
+              </div>
+
+              <div className="modal-reporte-salud-metrica">
+                <span>Mín / Máx</span>
+                <strong>
+                  {reporteSeleccionado.temperatura_min}° / {reporteSeleccionado.temperatura_max}°
+                </strong>
+              </div>
+
+              <div className="modal-reporte-salud-metrica">
+                <span>Humedad promedio</span>
+                <strong>{reporteSeleccionado.humedad_promedio}%</strong>
+              </div>
+
+            </div>
+
+            <div className="modal-reporte-salud-diagnostico">
+              <span className="modal-reporte-salud-diagnostico-titulo">
+                Diagnóstico
+              </span>
+              <p>
+                {reporteSeleccionado.diagnostico_ia}
+              </p>
             </div>
 
           </div>

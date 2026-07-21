@@ -12,6 +12,10 @@ use App\Http\Controllers\AlertaIncendioController;
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\PlantaController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\ReporteSaludController;
+use App\Http\Controllers\AgenteIAController;
+
+
 
 // pública, la llama serial_bridge.py (maquina a maquina, prioridad alta)
 Route::post('/alertas/incendio', [AlertaIncendioController::class, 'store']);
@@ -100,5 +104,11 @@ Route::get('/bitacoras/exportar', [BitacoraController::class, 'exportarPdf']);
 Route::apiResource('plantas', PlantaController::class);
 Route::post('/chatbot/preguntar', [ChatbotController::class, 'preguntar']);
 Route::get('/chatbot/historial', [ChatbotController::class, 'historial']);
+
+Route::get('/reportes-salud', [ReporteSaludController::class, 'index']);
+Route::post('/reportes-salud/generar', [ReporteSaludController::class, 'generar']);
+Route::get('/ia/estado', [AgenteIAController::class, 'estado']);
+Route::post('/ia/evaluar', [AgenteIAController::class, 'evaluar']);
+Route::post('/ia/modo-autonomo', [AgenteIAController::class, 'toggle']);
 
     });
