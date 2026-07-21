@@ -261,6 +261,237 @@ export default function Dashboard() {
 
 
   // =========================================
+  // GESTIÓN DE PLANTAS (CRUD)
+  // =========================================
+
+  const [plantas, setPlantas] =
+    useState([]);
+
+  const [cargandoPlantas, setCargandoPlantas] =
+    useState(false);
+
+  const [mensajePlantas, setMensajePlantas] =
+    useState("");
+
+  const [mostrarModalPlanta, setMostrarModalPlanta] =
+    useState(false);
+
+  const [plantaEditando, setPlantaEditando] =
+    useState(null); // null = creando, objeto = editando
+
+  const [guardandoPlanta, setGuardandoPlanta] =
+    useState(false);
+
+  const [erroresPlanta, setErroresPlanta] =
+    useState({});
+
+  const formPlantaVacio = {
+    nombre: "",
+    humedad_min: "",
+    humedad_max: "",
+    temperatura_min: "",
+    temperatura_max: "",
+    nutrientes_recomendados: "",
+    descripcion: "",
+  };
+
+  const [formPlanta, setFormPlanta] =
+    useState(formPlantaVacio);
+
+
+  // =========================================
+  // SUGERENCIA DE IA PARA PLANTAS
+  // =========================================
+
+  const [sugerenciaIA, setSugerenciaIA] =
+    useState(false);
+
+  const [cargandoSugerenciaIA, setCargandoSugerenciaIA] =
+    useState(false);
+
+  const [errorSugerenciaIA, setErrorSugerenciaIA] =
+    useState("");
+
+  const sugerirConIA = async () => {
+    if (!formPlanta.nombre || formPlanta.nombre.trim().length < 2) {
+      setErrorSugerenciaIA("Escribe primero el nombre de la planta.");
+      setTimeout(() => setErrorSugerenciaIA(""), 3000);
+      return;
+    }
+
+    try {
+      setCargandoSugerenciaIA(true);
+      setErrorSugerenciaIA("");
+      setSugerenciaIA(false);
+
+      const response = await api.post("/plantas/sugerir", {
+        nombre: formPlanta.nombre,
+      });
+
+      const sugerencia = response.data;
+
+      setFormPlanta((anterior) => ({
+        ...anterior,
+        humedad_min: sugerencia.humedad_min ?? anterior.humedad_min,
+        humedad_max: sugerencia.humedad_max ?? anterior.humedad_max,
+        temperatura_min: sugerencia.temperatura_min ?? anterior.temperatura_min,
+        temperatura_max: sugerencia.temperatura_max ?? anterior.temperatura_max,
+        nutrientes_recomendados:
+          sugerencia.nutrientes_recomendados ?? anterior.nutrientes_recomendados,
+        descripcion: sugerencia.descripcion ?? anterior.descripcion,
+      }));
+
+      setSugerenciaIA(true);
+
+    } catch (error) {
+      console.error("Error obteniendo sugerencia IA:", error);
+      setErrorSugerenciaIA(
+        error.response?.data?.message || "No se pudo generar la sugerencia."
+      );
+      setTimeout(() => setErrorSugerenciaIA(""), 4000);
+
+    } finally {
+      setCargandoSugerenciaIA(false);
+    }
+  };
+
+  const cargarPlantas = async () => {
+    try {
+      setCargandoPlantas(true);
+
+      const response = await api.get("/plantas");
+
+      setPlantas(response.data);
+
+    } catch (error) {
+      console.error("Error obteniendo plantas:", error);
+
+    } finally {
+      setCargandoPlantas(false);
+    }
+  };
+
+  const abrirModalPlanta = (planta = null) => {
+    setErroresPlanta({});
+    setSugerenciaIA(false);
+    setErrorSugerenciaIA("");
+
+    if (planta) {
+      setPlantaEditando(planta);
+      setFormPlanta({
+        nombre: planta.nombre ?? "",
+        humedad_min: planta.humedad_min ?? "",
+        humedad_max: planta.humedad_max ?? "",
+        temperatura_min: planta.temperatura_min ?? "",
+        temperatura_max: planta.temperatura_max ?? "",
+        nutrientes_recomendados: planta.nutrientes_recomendados ?? "",
+        descripcion: planta.descripcion ?? "",
+      });
+    } else {
+      setPlantaEditando(null);
+      setFormPlanta(formPlantaVacio);
+    }
+
+    setMostrarModalPlanta(true);
+  };
+
+  const cerrarModalPlanta = () => {
+    setMostrarModalPlanta(false);
+    setPlantaEditando(null);
+    setErroresPlanta({});
+    setSugerenciaIA(false);
+    setErrorSugerenciaIA("");
+  };
+
+  const actualizarCampoPlanta = (campo, valor) => {
+    setFormPlanta((anterior) => ({
+      ...anterior,
+      [campo]: valor,
+    }));
+
+    // Si el usuario edita algo a mano después de aceptar la sugerencia,
+    // dejamos de mostrar el aviso morado de "sugerido por IA".
+    if (sugerenciaIA) {
+      setSugerenciaIA(false);
+    }
+  };
+
+  const guardarPlanta = async (e) => {
+    e.preventDefault();
+
+    try {
+      setGuardandoPlanta(true);
+      setErroresPlanta({});
+
+      const payload = {
+        nombre: formPlanta.nombre,
+        humedad_min: Number(formPlanta.humedad_min),
+        humedad_max: Number(formPlanta.humedad_max),
+        temperatura_min: Number(formPlanta.temperatura_min),
+        temperatura_max: Number(formPlanta.temperatura_max),
+        nutrientes_recomendados: formPlanta.nutrientes_recomendados,
+        descripcion: formPlanta.descripcion || null,
+      };
+
+      if (plantaEditando) {
+        await api.put(`/plantas/${plantaEditando.id}`, payload);
+        setMensajePlantas("Planta actualizada correctamente");
+      } else {
+        await api.post("/plantas", payload);
+        setMensajePlantas("Planta registrada correctamente");
+      }
+
+      cerrarModalPlanta();
+      cargarPlantas();
+
+      setTimeout(() => setMensajePlantas(""), 3000);
+
+    } catch (error) {
+      console.error("Error guardando planta:", error);
+
+      const data = error.response?.data;
+
+      // Laravel devuelve un objeto { campo: [mensajes] } cuando falla la validación
+      if (data && typeof data === "object" && !data.message) {
+        setErroresPlanta(data);
+      } else {
+        setMensajePlantas(
+          data?.message || "No se pudo guardar la planta"
+        );
+        setTimeout(() => setMensajePlantas(""), 4000);
+      }
+
+    } finally {
+      setGuardandoPlanta(false);
+    }
+  };
+
+  const eliminarPlanta = async (id, nombre) => {
+    const confirmar = window.confirm(
+      `¿Seguro que quieres eliminar "${nombre}"? Esta acción no se puede deshacer.`
+    );
+
+    if (!confirmar) return;
+
+    try {
+      await api.delete(`/plantas/${id}`);
+
+      setMensajePlantas("Planta eliminada");
+      cargarPlantas();
+
+      setTimeout(() => setMensajePlantas(""), 3000);
+
+    } catch (error) {
+      console.error("Error eliminando planta:", error);
+      setMensajePlantas(
+        error.response?.data?.message || "No se pudo eliminar la planta"
+      );
+      setTimeout(() => setMensajePlantas(""), 3000);
+    }
+  };
+
+
+  // =========================================
   // EXPORTAR BITÁCORA (HU-14)
   // =========================================
 
@@ -607,6 +838,7 @@ export default function Dashboard() {
     cargarUltimoIncidente();
     cargarEstadoActuadores();
     cargarAlertas();
+    cargarPlantas();
 
     if (rol === "administrador") {
       cargarUsuarios();
@@ -664,6 +896,7 @@ export default function Dashboard() {
       "graficas",
       "asistente",
       "alertas",
+      "plantas",
       "control-actuadores",
       "usuarios",
       "configuracion-umbrales",
@@ -914,6 +1147,31 @@ export default function Dashboard() {
 
             <span>
               Alertas
+            </span>
+
+          </button>
+
+
+          {/* PLANTAS */}
+
+          <button
+            className={
+              seccionActiva === "plantas"
+                ? "sidebar-item active"
+                : "sidebar-item"
+            }
+            type="button"
+            onClick={() =>
+              irASeccion("plantas")
+            }
+          >
+
+            <span className="sidebar-icon">
+              🌿
+            </span>
+
+            <span>
+              Plantas
             </span>
 
           </button>
@@ -1600,6 +1858,157 @@ export default function Dashboard() {
                         </div>
 
                       </div>
+                    ))}
+
+                  </div>
+                )}
+
+              </section>
+
+
+              {/* =================================
+                  PLANTAS (CRUD)
+              ================================== */}
+
+              <section
+                id="plantas"
+                className="dashboard-section"
+              >
+
+                <div className="dashboard-section-heading">
+
+                  <span>
+                    Catálogo
+                  </span>
+
+                  <h2>
+                    Plantas registradas
+                  </h2>
+
+                  <p>
+                    Define los rangos ideales de humedad, temperatura y
+                    nutrientes para cada planta del invernadero (máximo 3).
+                  </p>
+
+                </div>
+
+
+                {mensajePlantas && (
+                  <div className="dashboard-message">
+                    {mensajePlantas}
+                  </div>
+                )}
+
+
+                <div className="plantas-toolbar">
+
+                  <div className="plantas-toolbar-info">
+                    <span className="plantas-contador">
+                      <strong>{plantas.length}</strong> / 3 registradas
+                    </span>
+
+                    {plantas.length >= 3 && (
+                      <span className="plantas-limite-aviso">
+                        ⚠ Límite alcanzado
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-agregar-planta"
+                    disabled={plantas.length >= 3}
+                    onClick={() => abrirModalPlanta(null)}
+                  >
+                    <span>+</span> Agregar planta
+                  </button>
+
+                </div>
+
+
+                {cargandoPlantas ? (
+                  <p className="dashboard-message">
+                    Cargando plantas...
+                  </p>
+                ) : plantas.length === 0 ? (
+                  <div className="plantas-vacio">
+                    <div className="plantas-vacio-icono">🌱</div>
+                    <strong>Todavía no hay plantas registradas</strong>
+                    <span>
+                      Agrega hasta 3 plantas con sus rangos ideales de humedad,
+                      temperatura y nutrientes recomendados.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="plantas-grid">
+
+                    {plantas.map((planta) => (
+                      <article key={planta.id} className="planta-card">
+
+                        <div className="planta-card-header">
+
+                          <div className="planta-card-icono">
+                            🌱
+                          </div>
+
+                          <div className="planta-card-titulo">
+                            <strong>{planta.nombre}</strong>
+                            <span>Planta registrada</span>
+                          </div>
+
+                        </div>
+
+
+                        <div className="planta-card-badges">
+
+                          <span className="planta-badge planta-badge-humedad">
+                            💧 {planta.humedad_min}% – {planta.humedad_max}%
+                          </span>
+
+                          <span className="planta-badge planta-badge-temp">
+                            🌡️ {planta.temperatura_min}°C – {planta.temperatura_max}°C
+                          </span>
+
+                        </div>
+
+
+                        <div className="planta-card-detalle">
+
+                          <div className="planta-card-fila">
+                            <b>Nutrientes</b>
+                            <span>{planta.nutrientes_recomendados}</span>
+                          </div>
+
+                          {planta.descripcion && (
+                            <p className="planta-card-descripcion">
+                              "{planta.descripcion}"
+                            </p>
+                          )}
+
+                        </div>
+
+
+                        <div className="planta-card-footer">
+
+                          <button
+                            type="button"
+                            className="btn-editar-planta"
+                            onClick={() => abrirModalPlanta(planta)}
+                          >
+                            ✏️ Editar
+                          </button>
+
+                          <button
+                            type="button"
+                            className="btn-eliminar-planta"
+                            onClick={() => eliminarPlanta(planta.id, planta.nombre)}
+                          >
+                            🗑️ Eliminar
+                          </button>
+
+                        </div>
+
+                      </article>
                     ))}
 
                   </div>
@@ -2493,6 +2902,267 @@ export default function Dashboard() {
                 {reporteSeleccionado.diagnostico_ia}
               </p>
             </div>
+
+          </div>
+
+        </div>
+      )}
+
+
+      {/* =====================================
+          MODAL: CREAR / EDITAR PLANTA
+      ====================================== */}
+
+      {mostrarModalPlanta && (
+        <div
+          className="modal-overlay"
+          onClick={cerrarModalPlanta}
+        >
+
+          <div
+            className="modal-planta"
+            onClick={(e) => e.stopPropagation()}
+          >
+
+            <div className="modal-planta-header">
+
+              <div>
+                <span className="modal-planta-etiqueta">
+                  🌿 Catálogo de plantas
+                </span>
+                <h3>
+                  {plantaEditando ? "Editar planta" : "Nueva planta"}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                className="modal-cerrar"
+                onClick={cerrarModalPlanta}
+              >
+                ✕
+              </button>
+
+            </div>
+
+
+            <form
+              onSubmit={guardarPlanta}
+              className="form-planta"
+            >
+
+              {/* ---- NOMBRE + SUGERENCIA IA ---- */}
+
+              <div className="form-planta-grupo">
+
+                <div className="form-planta-nombre-header">
+
+                  <label htmlFor="planta_nombre">Nombre</label>
+
+                  <button
+                    type="button"
+                    className="btn-sugerir-ia"
+                    disabled={cargandoSugerenciaIA}
+                    onClick={sugerirConIA}
+                  >
+                    {cargandoSugerenciaIA ? (
+                      <>
+                        <span className="btn-sugerir-ia-spinner" />
+                        Pensando...
+                      </>
+                    ) : (
+                      <>
+                        <span className="btn-sugerir-ia-icono">✨</span>
+                        Sugerir con IA
+                      </>
+                    )}
+                  </button>
+
+                </div>
+
+                <input
+                  id="planta_nombre"
+                  type="text"
+                  required
+                  maxLength={100}
+                  placeholder="Ej. Tomate cherry"
+                  className={erroresPlanta.nombre ? "input-error" : ""}
+                  value={formPlanta.nombre}
+                  onChange={(e) =>
+                    actualizarCampoPlanta("nombre", e.target.value)
+                  }
+                />
+                {erroresPlanta.nombre && (
+                  <span className="form-planta-error">
+                    {erroresPlanta.nombre[0]}
+                  </span>
+                )}
+
+                {errorSugerenciaIA && (
+                  <span className="form-planta-error">
+                    {errorSugerenciaIA}
+                  </span>
+                )}
+
+                {sugerenciaIA && !errorSugerenciaIA && (
+                  <div className="form-planta-sugerencia-aviso">
+                    <span className="form-planta-sugerencia-icono">✨</span>
+                    <span>
+                      Rellenamos los campos con una sugerencia de IA.
+                      Puedes editarlos libremente antes de guardar.
+                    </span>
+                  </div>
+                )}
+
+              </div>
+
+              <div className="form-planta-fila">
+
+                <div className="form-planta-grupo">
+                  <label htmlFor="planta_humedad_min">Humedad mín (%)</label>
+                  <input
+                    id="planta_humedad_min"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    required
+                    className={erroresPlanta.humedad_min ? "input-error" : ""}
+                    value={formPlanta.humedad_min}
+                    onChange={(e) =>
+                      actualizarCampoPlanta("humedad_min", e.target.value)
+                    }
+                  />
+                  {erroresPlanta.humedad_min && (
+                    <span className="form-planta-error">
+                      {erroresPlanta.humedad_min[0]}
+                    </span>
+                  )}
+                </div>
+
+                <div className="form-planta-grupo">
+                  <label htmlFor="planta_humedad_max">Humedad máx (%)</label>
+                  <input
+                    id="planta_humedad_max"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    required
+                    className={erroresPlanta.humedad_max ? "input-error" : ""}
+                    value={formPlanta.humedad_max}
+                    onChange={(e) =>
+                      actualizarCampoPlanta("humedad_max", e.target.value)
+                    }
+                  />
+                  {erroresPlanta.humedad_max && (
+                    <span className="form-planta-error">
+                      {erroresPlanta.humedad_max[0]}
+                    </span>
+                  )}
+                </div>
+
+              </div>
+
+              <div className="form-planta-fila">
+
+                <div className="form-planta-grupo">
+                  <label htmlFor="planta_temp_min">Temp mín (°C)</label>
+                  <input
+                    id="planta_temp_min"
+                    type="number"
+                    step="0.01"
+                    min="-10"
+                    max="60"
+                    required
+                    className={erroresPlanta.temperatura_min ? "input-error" : ""}
+                    value={formPlanta.temperatura_min}
+                    onChange={(e) =>
+                      actualizarCampoPlanta("temperatura_min", e.target.value)
+                    }
+                  />
+                  {erroresPlanta.temperatura_min && (
+                    <span className="form-planta-error">
+                      {erroresPlanta.temperatura_min[0]}
+                    </span>
+                  )}
+                </div>
+
+                <div className="form-planta-grupo">
+                  <label htmlFor="planta_temp_max">Temp máx (°C)</label>
+                  <input
+                    id="planta_temp_max"
+                    type="number"
+                    step="0.01"
+                    min="-10"
+                    max="60"
+                    required
+                    className={erroresPlanta.temperatura_max ? "input-error" : ""}
+                    value={formPlanta.temperatura_max}
+                    onChange={(e) =>
+                      actualizarCampoPlanta("temperatura_max", e.target.value)
+                    }
+                  />
+                  {erroresPlanta.temperatura_max && (
+                    <span className="form-planta-error">
+                      {erroresPlanta.temperatura_max[0]}
+                    </span>
+                  )}
+                </div>
+
+              </div>
+
+              <div className="form-planta-grupo">
+                <label htmlFor="planta_nutrientes">Nutrientes recomendados</label>
+                <textarea
+                  id="planta_nutrientes"
+                  required
+                  maxLength={1000}
+                  rows={2}
+                  placeholder="Ej. Nitrógeno, fósforo y potasio en proporción 3-1-2"
+                  className={erroresPlanta.nutrientes_recomendados ? "input-error" : ""}
+                  value={formPlanta.nutrientes_recomendados}
+                  onChange={(e) =>
+                    actualizarCampoPlanta("nutrientes_recomendados", e.target.value)
+                  }
+                />
+                {erroresPlanta.nutrientes_recomendados && (
+                  <span className="form-planta-error">
+                    {erroresPlanta.nutrientes_recomendados[0]}
+                  </span>
+                )}
+              </div>
+
+              <div className="form-planta-grupo">
+                <label htmlFor="planta_descripcion">Descripción (opcional)</label>
+                <textarea
+                  id="planta_descripcion"
+                  maxLength={1000}
+                  rows={2}
+                  placeholder="Notas adicionales sobre el cuidado de esta planta"
+                  value={formPlanta.descripcion}
+                  onChange={(e) =>
+                    actualizarCampoPlanta("descripcion", e.target.value)
+                  }
+                />
+                <span className="form-planta-ayuda">
+                  Este campo es opcional.
+                </span>
+              </div>
+
+              <button
+                type="submit"
+                className="form-planta-submit"
+                disabled={guardandoPlanta}
+              >
+                {guardandoPlanta
+                  ? "Guardando..."
+                  : plantaEditando
+                    ? "Guardar cambios"
+                    : "Guardar planta"}
+              </button>
+
+            </form>
 
           </div>
 

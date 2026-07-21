@@ -17,6 +17,12 @@
   --agro-muted: #5d7d68;
 
   --agro-border: rgba(21, 128, 61, 0.16);
+
+  /* Acento morado reservado para todo lo relacionado con IA */
+  --agro-ia: #7c3aed;
+  --agro-ia-light: #a855f7;
+  --agro-ia-soft: rgba(124, 58, 237, 0.08);
+  --agro-ia-border: rgba(124, 58, 237, 0.28);
 }
 
 html { scroll-behavior: smooth; }
@@ -997,4 +1003,584 @@ body { margin: 0; background: var(--agro-bg); }
   line-height: 1.6;
   color: #33413a;
   margin: 0;
+}
+/* =========================================
+   CATÁLOGO DE PLANTAS (CRUD)
+   Agregar al final de Dashboard.css
+========================================= */
+
+/* ---- Barra de acciones ---- */
+
+.plantas-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.plantas-toolbar-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plantas-contador {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(21, 128, 61, 0.2);
+  background: rgba(34, 197, 94, 0.08);
+  color: var(--agro-green-soft);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.plantas-contador strong {
+  color: var(--agro-green-dark);
+  font-size: 13px;
+}
+
+.btn-agregar-planta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 14px;
+  border: 1px solid var(--agro-green);
+  background: linear-gradient(135deg, var(--agro-green), var(--agro-green-light));
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(34, 197, 94, 0.28);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.btn-agregar-planta:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(34, 197, 94, 0.36);
+  filter: brightness(1.03);
+}
+
+.btn-agregar-planta:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+  transform: none;
+}
+
+.plantas-limite-aviso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #a15c1f;
+  background: rgba(217, 119, 6, 0.1);
+  border: 1px solid rgba(217, 119, 6, 0.22);
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+/* ---- Estado vacío ---- */
+
+.plantas-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 56px 24px;
+  border: 1.5px dashed rgba(21, 128, 61, 0.28);
+  border-radius: 22px;
+  background: rgba(34, 197, 94, 0.04);
+  text-align: center;
+}
+
+.plantas-vacio-icono {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(34, 197, 94, 0.12);
+  font-size: 26px;
+  margin-bottom: 4px;
+}
+
+.plantas-vacio strong {
+  color: var(--agro-text);
+  font-size: 15px;
+}
+
+.plantas-vacio span {
+  color: #6b8375;
+  font-size: 13px;
+  max-width: 320px;
+}
+
+/* ---- Grid de tarjetas ---- */
+
+.plantas-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 22px;
+}
+
+.planta-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 26px 22px;
+  border: 1px solid rgba(21, 128, 61, 0.14);
+  border-radius: 22px;
+  background: linear-gradient(150deg, #ffffff 0%, #eff9f1 100%);
+  box-shadow: 0 20px 50px rgba(21, 128, 61, 0.07);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.planta-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(21, 128, 61, 0.3);
+  box-shadow: 0 24px 60px rgba(21, 128, 61, 0.14);
+}
+
+.planta-card::before {
+  content: "";
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  right: -50px;
+  top: -50px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.09);
+  filter: blur(4px);
+}
+
+.planta-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 18px;
+  z-index: 1;
+}
+
+.planta-card-icono {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(101, 163, 13, 0.1));
+  border: 1px solid rgba(21, 128, 61, 0.16);
+  font-size: 22px;
+}
+
+.planta-card-titulo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.planta-card-titulo strong {
+  color: var(--agro-text);
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.planta-card-titulo span {
+  color: var(--agro-muted);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+.planta-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  z-index: 1;
+}
+
+.planta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border: 1px solid rgba(21, 128, 61, 0.16);
+  background: rgba(255, 255, 255, 0.6);
+  color: #3c5c47;
+}
+
+.planta-badge-humedad {
+  border-color: rgba(15, 118, 110, 0.22);
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--agro-teal);
+}
+
+.planta-badge-temp {
+  border-color: rgba(217, 119, 6, 0.22);
+  background: rgba(217, 119, 6, 0.08);
+  color: #b45309;
+}
+
+.planta-card-detalle {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.planta-card-fila {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #557061;
+}
+
+.planta-card-fila b {
+  flex-shrink: 0;
+  color: var(--agro-green-soft);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.planta-card-descripcion {
+  font-size: 13px;
+  color: #6b8375;
+  font-style: italic;
+  line-height: 1.55;
+}
+
+.planta-card-footer {
+  z-index: 1;
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(21, 128, 61, 0.1);
+}
+
+.btn-editar-planta {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 11px;
+  border: 1px solid rgba(21, 128, 61, 0.24);
+  background: rgba(34, 197, 94, 0.08);
+  color: var(--agro-green-dark);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.btn-editar-planta:hover {
+  background: rgba(34, 197, 94, 0.16);
+  transform: translateY(-1px);
+}
+
+.btn-eliminar-planta {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 11px;
+  border: 1px solid rgba(220, 38, 38, 0.22);
+  background: rgba(239, 68, 68, 0.06);
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.btn-eliminar-planta:hover {
+  background: rgba(239, 68, 68, 0.14);
+  transform: translateY(-1px);
+}
+
+/* =========================================
+   MODAL: CREAR / EDITAR PLANTA
+========================================= */
+
+.modal-planta {
+  background: #ffffff;
+  border-radius: 22px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 32px;
+  box-shadow: 0 24px 60px rgba(15, 40, 25, 0.25);
+  animation: modal-reporte-salud-entrada 0.2s ease-out;
+}
+
+.modal-planta-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e6ede8;
+  margin-bottom: 24px;
+}
+
+.modal-planta-etiqueta {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--agro-green-soft);
+  margin-bottom: 6px;
+}
+
+.modal-planta-header h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #16241c;
+}
+
+.form-planta {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-planta-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-planta-grupo label {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--agro-text);
+}
+
+.form-planta-grupo input,
+.form-planta-grupo textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(21, 128, 61, 0.2);
+  background: #ffffff;
+  color: var(--agro-text);
+  font-size: 14.5px;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-planta-grupo textarea {
+  resize: vertical;
+  min-height: 68px;
+  line-height: 1.5;
+}
+
+.form-planta-grupo input:focus,
+.form-planta-grupo textarea:focus {
+  outline: none;
+  border-color: var(--agro-green);
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+}
+
+.form-planta-grupo input.input-error,
+.form-planta-grupo textarea.input-error {
+  border-color: #ef4444;
+}
+
+.form-planta-grupo input.input-error:focus,
+.form-planta-grupo textarea.input-error:focus {
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+}
+
+.form-planta-fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-planta-error {
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.form-planta-ayuda {
+  font-size: 12px;
+  color: #6b8375;
+}
+
+.form-planta-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 14px 22px;
+  border-radius: 14px;
+  border: 1px solid var(--agro-green);
+  background: linear-gradient(135deg, var(--agro-green), var(--agro-green-light));
+  color: #ffffff;
+  font-size: 14.5px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(34, 197, 94, 0.28);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.form-planta-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px rgba(34, 197, 94, 0.36);
+  filter: brightness(1.03);
+}
+
+.form-planta-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 720px) {
+  .plantas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-planta-fila {
+    grid-template-columns: 1fr;
+  }
+
+  .plantas-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .modal-planta {
+    padding: 24px;
+  }
+}
+
+/* =========================================
+   SUGERENCIA DE IA EN EL FORMULARIO DE PLANTA
+========================================= */
+
+.form-planta-nombre-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.form-planta-nombre-header label {
+  margin: 0;
+}
+
+.btn-sugerir-ia {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, var(--agro-ia), var(--agro-ia-light));
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 10px 22px rgba(124, 58, 237, 0.28);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.btn-sugerir-ia:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(124, 58, 237, 0.36);
+  filter: brightness(1.05);
+}
+
+.btn-sugerir-ia:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-sugerir-ia:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-sugerir-ia-icono {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.btn-sugerir-ia-spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+  animation: switch-spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+.form-planta-sugerencia-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 2px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--agro-ia-border);
+  background: linear-gradient(135deg, var(--agro-ia-soft), rgba(168, 85, 247, 0.05));
+  color: #5b21b6;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.form-planta-sugerencia-icono {
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1.4;
 }

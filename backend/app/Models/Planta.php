@@ -10,6 +10,7 @@ class Planta extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'nombre',
         'humedad_min',
         'humedad_max',
@@ -18,4 +19,9 @@ class Planta extends Model
         'nutrientes_recomendados',
         'descripcion',
     ];
+
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

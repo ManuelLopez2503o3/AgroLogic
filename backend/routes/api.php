@@ -110,5 +110,6 @@ Route::post('/reportes-salud/generar', [ReporteSaludController::class, 'generar'
 Route::get('/ia/estado', [AgenteIAController::class, 'estado']);
 Route::post('/ia/evaluar', [AgenteIAController::class, 'evaluar']);
 Route::post('/ia/modo-autonomo', [AgenteIAController::class, 'toggle']);
+Route::post('/plantas/sugerir', [PlantaController::class, 'sugerir']);
 
     });
