@@ -6,18 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-  public function up(): void
-{
-    Schema::create('chat_historial', function (Blueprint $table) {
-        $table->id();
-        $table->bigInteger('user_id');
-        $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-        $table->foreignId('planta_id')->nullable()->constrained('plantas')->onDelete('set null');
-        $table->text('pregunta');
-        $table->text('respuesta');
-        $table->timestamps();
-    });
-}
+    public function up(): void
+    {
+        if (!Schema::hasTable('chat_historial')) {
+            Schema::create('chat_historial', function (Blueprint $table) {
+                $table->id();
+                $table->bigInteger('user_id');
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+                $table->foreignId('planta_id')->nullable()->constrained('plantas')->onDelete('set null');
+                $table->text('pregunta');
+                $table->text('respuesta');
+                $table->timestamps();
+            });
+        }
+    }
 
     public function down(): void
     {
