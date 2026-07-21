@@ -11,8 +11,10 @@ return new class extends Migration
     {
         if (!Schema::hasColumn('plantas', 'user_id')) {
             Schema::table('plantas', function (Blueprint $table) {
-                $table->bigInteger('user_id')->after('id');
+                $table->unsignedBigInteger('user_id')->after('id');
             });
+        } else {
+            DB::statement('ALTER TABLE plantas MODIFY user_id BIGINT UNSIGNED NOT NULL');
         }
 
         $foreignKeyExists = DB::table('information_schema.TABLE_CONSTRAINTS')
